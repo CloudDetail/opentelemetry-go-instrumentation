@@ -20,6 +20,7 @@ type bpf_no_tpHttpRequestT struct {
 	Host        [128]int8
 	Proto       [8]int8
 	StatusCode  uint64
+	Pid         uint32
 	Method      [16]int8
 	Path        [128]int8
 	Scheme      [8]int8

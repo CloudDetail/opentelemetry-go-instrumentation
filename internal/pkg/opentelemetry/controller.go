@@ -16,7 +16,9 @@ package opentelemetry
 
 import (
 	"context"
+	"os"
 	"runtime"
+	"strconv"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -24,6 +26,11 @@ import (
 	"golang.org/x/sys/unix"
 
 	"go.opentelemetry.io/auto/internal/pkg/instrumentation/probe"
+	"go.opentelemetry.io/auto/internal/pkg/instrumentation/utils"
+)
+
+const (
+	EnvOpenWriteTrace = "KINDLING_WRITE_TRACE"
 )
 
 // Controller handles OpenTelemetry telemetry generation for events.
@@ -33,6 +40,7 @@ type Controller struct {
 	tracerProvider trace.TracerProvider
 	tracersMap     map[string]trace.Tracer
 	bootTime       int64
+	enableTrace    bool
 }
 
 func (c *Controller) getTracer(pkg string) trace.Tracer {
@@ -51,6 +59,9 @@ func (c *Controller) getTracer(pkg string) trace.Tracer {
 
 // Trace creates a trace span for event.
 func (c *Controller) Trace(event *probe.Event) {
+	if !c.enableTrace {
+		return
+	}
 	for _, se := range event.SpanEvents {
 		c.logger.Info("got event", "kind", event.Kind.String(), "pkg", event.Package, "attrs", se.Attributes, "traceID", se.SpanContext.TraceID().String(), "spanID", se.SpanContext.SpanID().String())
 		ctx := context.Background()
@@ -89,12 +100,15 @@ func NewController(logger logr.Logger, tracerProvider trace.TracerProvider, ver 
 		return nil, err
 	}
 
+	// 缓存启动时间
+	utils.SetBootTime(bt)
 	return &Controller{
 		logger:         logger,
 		version:        ver,
 		tracerProvider: tracerProvider,
 		tracersMap:     make(map[string]trace.Tracer),
 		bootTime:       bt,
+		enableTrace:    openWriteTrace(),
 	}, nil
 }
 
@@ -141,4 +155,15 @@ func estimateBootTimeOffset() (bootTimeOffset int64, err error) {
 	}
 
 	return bootTimeOffset, nil
+}
+
+func openWriteTrace() bool {
+	val := os.Getenv(EnvOpenWriteTrace)
+	if val != "" {
+		boolVal, err := strconv.ParseBool(val)
+		if err == nil {
+			return boolVal
+		}
+	}
+	return false
 }

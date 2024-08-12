@@ -24,6 +24,7 @@ struct http_request_t {
     char host[MAX_HOSTNAME_SIZE];
     char proto[MAX_PROTO_SIZE];
     u64 status_code;
+    u32 pid;
     char method[MAX_METHOD_SIZE];
     char path[MAX_PATH_SIZE];
     char scheme[MAX_SCHEME_SIZE];
@@ -234,6 +235,7 @@ int uprobe_Transport_roundTrip_Returns(struct pt_regs *ctx) {
     }
 
     http_req_span->end_time = end_time;
+    http_req_span->pid = bpf_get_current_pid_tgid() >> 32;
 
     bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU, http_req_span, sizeof(*http_req_span));
     stop_tracking_span(&http_req_span->sc, &http_req_span->psc);

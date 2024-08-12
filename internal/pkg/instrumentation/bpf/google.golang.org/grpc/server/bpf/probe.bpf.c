@@ -28,6 +28,8 @@ char __license[] SEC("license") = "Dual MIT/GPL";
 struct grpc_request_t
 {
     BASE_SPAN_PROPERTIES
+    u64 go_id;
+    u32 pid;
     char method[MAX_SIZE];
 };
 
@@ -105,6 +107,13 @@ int uprobe_server_handleStream(struct pt_regs *ctx)
         grpcReq.sc = generate_span_context();
     }
 
+    u64 go_id = 0;
+    bpf_probe_read(&go_id, sizeof(go_id), key + 152);
+    grpcReq.go_id = go_id;
+    grpcReq.pid = bpf_get_current_pid_tgid() >> 32;
+    bpf_printk("uprobe/grpc current go id:%d pid: %d", go_id, grpcReq.pid);
+
+
     grpcReq.start_time = bpf_ktime_get_ns();
     // Set attributes
     if (!get_go_string_from_user_ptr((void *)(stream_ptr + stream_method_ptr_pos), grpcReq.method, sizeof(grpcReq.method)))
@@ -115,6 +124,7 @@ int uprobe_server_handleStream(struct pt_regs *ctx)
 
     // Write event
     bpf_map_update_elem(&grpc_events, &key, &grpcReq, 0);
+    bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU, &grpcReq, sizeof(grpcReq));
     start_tracking_span(ctx_iface, &grpcReq.sc);
     return 0;
 }

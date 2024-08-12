@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/auto/internal/pkg/instrumentation/bpf/net/http"
 	"go.opentelemetry.io/auto/internal/pkg/instrumentation/context"
 	"go.opentelemetry.io/auto/internal/pkg/instrumentation/probe"
+	"go.opentelemetry.io/auto/internal/pkg/instrumentation/utils"
 	"go.opentelemetry.io/auto/internal/pkg/process"
 	"go.opentelemetry.io/auto/internal/pkg/structfield"
 )
@@ -182,6 +183,8 @@ type event struct {
 	RemoteAddr  [256]byte
 	Host        [256]byte
 	Proto       [8]byte
+	GoId        uint64
+	Pid         uint32
 }
 
 func convertEvent(e *event) []*probe.SpanEvent {
@@ -214,6 +217,11 @@ func convertEvent(e *event) []*probe.SpanEvent {
 		pscPtr = &psc
 	} else {
 		pscPtr = nil
+	}
+
+	if e.EndTime == 0 {
+		utils.WriteKdServerEnter(sc.TraceID().String(), int64(e.StartTime), pscPtr == nil, path, e.GoId, e.Pid)
+		return []*probe.SpanEvent{}
 	}
 
 	attributes := []attribute.KeyValue{
@@ -255,6 +263,15 @@ func convertEvent(e *event) []*probe.SpanEvent {
 		spanName = spanName + " " + patternPath
 		attributes = append(attributes, semconv.HTTPRouteKey.String(patternPath))
 	}
+	utils.WriteKdServerExit(
+		sc.TraceID().String(),
+		int64(e.EndTime),
+		e.StatusCode > 200,
+		sc.SpanID().String(),
+		sc.TraceFlags().IsSampled(),
+		e.GoId,
+		e.Pid,
+	)
 
 	spanEvent := &probe.SpanEvent{
 		SpanName:          spanName,

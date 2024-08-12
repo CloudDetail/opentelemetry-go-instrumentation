@@ -38,6 +38,8 @@ struct http_server_span_t
     char remote_addr[REMOTE_ADDR_MAX_LEN];
     char host[HOST_MAX_LEN];
     char proto[PROTO_MAX_LEN];
+    u64 go_id;
+    u32 pid;
 };
 
 struct uprobe_data_t
@@ -200,6 +202,14 @@ static __always_inline struct span_context *extract_context_from_req_headers(voi
     return NULL;
 }
 
+void read_go_string(void *base, int offset, char *output, int maxLen, const char *errorMsg) {
+    void *ptr = (void *)(base + offset);
+    if (!get_go_string_from_user_ptr(ptr, output, maxLen)) {
+        bpf_printk("Failed to get %s", errorMsg);
+    }
+    
+}
+
 // This instrumentation attaches uprobe to the following function:
 // func (sh serverHandler) ServeHTTP(rw ResponseWriter, req *Request)
 SEC("uprobe/HandlerFunc_ServeHTTP")
@@ -208,6 +218,7 @@ int uprobe_HandlerFunc_ServeHTTP(struct pt_regs *ctx)
     void *req_ctx_ptr = get_Go_context(ctx, 4, ctx_ptr_pos, false);
     void *key = get_consistent_key(ctx, req_ctx_ptr);
     void *httpReq_ptr = bpf_map_lookup_elem(&http_server_uprobes, &key);
+
     if (httpReq_ptr != NULL)
     {
         bpf_printk("uprobe/HandlerFunc_ServeHTTP already tracked with the current request");
@@ -231,6 +242,13 @@ int uprobe_HandlerFunc_ServeHTTP(struct pt_regs *ctx)
     struct http_server_span_t *http_server_span = &uprobe_data->span;
     http_server_span->start_time = bpf_ktime_get_ns();
 
+    u64 go_id = 0;
+    bpf_probe_read(&go_id, sizeof(go_id), key + 152);
+    bpf_printk("uprobe/HandlerFunc_ServeHTTP current go id:%d", go_id);
+
+    http_server_span->go_id = go_id;
+    http_server_span->pid = bpf_get_current_pid_tgid() >> 32;
+
     // Propagate context
     void *req_ptr = get_argument(ctx, 4);
     struct span_context *parent_ctx = extract_context_from_req_headers((void*)(req_ptr + headers_ptr_pos));
@@ -252,17 +270,14 @@ int uprobe_HandlerFunc_ServeHTTP(struct pt_regs *ctx)
         return 0;
     }
 
+    void *url_ptr = 0;
+    bpf_probe_read(&url_ptr, sizeof(url_ptr), (void *)(req_ptr + url_ptr_pos));
+    read_go_string(url_ptr, path_ptr_pos, http_server_span->path, sizeof(http_server_span->path), "path from Request.URL");
+
     bpf_map_update_elem(&http_server_uprobes, &key, uprobe_data, 0);
+    bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU, http_server_span, sizeof(*http_server_span));
     start_tracking_span(req_ctx_ptr, &http_server_span->sc);
     return 0;
-}
-
-void read_go_string(void *base, int offset, char *output, int maxLen, const char *errorMsg) {
-    void *ptr = (void *)(base + offset);
-    if (!get_go_string_from_user_ptr(ptr, output, maxLen)) {
-        bpf_printk("Failed to get %s", errorMsg);
-    }
-    
 }
 
 // This instrumentation attaches uprobe to the following function:
@@ -286,6 +301,12 @@ int uprobe_HandlerFunc_ServeHTTP_Returns(struct pt_regs *ctx) {
     bpf_probe_read(&req_ptr, sizeof(req_ptr), (void *)(resp_ptr + req_ptr_pos));
 
     http_server_span->end_time = end_time;
+
+    u64 go_id = 0;
+    bpf_probe_read(&go_id, sizeof(go_id), key + 152);
+    bpf_printk("uprobe/HandlerFunc_ServeHTTP_Return current go id:%d", go_id);
+    http_server_span->go_id = go_id;
+    http_server_span->pid = bpf_get_current_pid_tgid() >> 32;
 
     void *url_ptr = 0;
     bpf_probe_read(&url_ptr, sizeof(url_ptr), (void *)(req_ptr + url_ptr_pos));

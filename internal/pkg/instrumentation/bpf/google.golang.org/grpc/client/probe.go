@@ -147,6 +147,7 @@ func uprobeInvoke(name string, exec *link.Executable, target *process.TargetDeta
 // event represents an event in the gRPC client during a gRPC request.
 type event struct {
 	context.BaseSpanProperties
+	Pid    uint32
 	Method [50]byte
 	Target [50]byte
 }
@@ -187,6 +188,7 @@ func convertEvent(e *event) []*probe.SpanEvent {
 	} else {
 		pscPtr = nil
 	}
+	utils.WriteKdClientEvent(sc.TraceID().String(), int64(e.StartTime), int64(e.EndTime), e.Pid)
 
 	return []*probe.SpanEvent{
 		{

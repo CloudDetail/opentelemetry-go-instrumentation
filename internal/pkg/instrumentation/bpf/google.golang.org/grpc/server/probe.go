@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/auto/internal/pkg/inject"
 	"go.opentelemetry.io/auto/internal/pkg/instrumentation/context"
 	"go.opentelemetry.io/auto/internal/pkg/instrumentation/probe"
+	"go.opentelemetry.io/auto/internal/pkg/instrumentation/utils"
 	"go.opentelemetry.io/auto/internal/pkg/process"
 	"go.opentelemetry.io/auto/internal/pkg/structfield"
 )
@@ -160,6 +161,8 @@ func uprobeOperateHeaders(name string, exec *link.Executable, target *process.Ta
 // event represents an event in the gRPC server during a gRPC request.
 type event struct {
 	context.BaseSpanProperties
+	GoId   uint64
+	Pid    uint32
 	Method [100]byte
 }
 
@@ -183,6 +186,20 @@ func convertEvent(e *event) []*probe.SpanEvent {
 		pscPtr = &psc
 	} else {
 		pscPtr = nil
+	}
+	if e.EndTime == 0 {
+		utils.WriteKdServerEnter(sc.TraceID().String(), int64(e.StartTime), pscPtr == nil, method, e.GoId, e.Pid)
+		return []*probe.SpanEvent{}
+	} else {
+		utils.WriteKdServerExit(
+			sc.TraceID().String(),
+			int64(e.EndTime),
+			false,
+			sc.SpanID().String(),
+			sc.TraceFlags().IsSampled(),
+			e.GoId,
+			e.Pid,
+		)
 	}
 
 	return []*probe.SpanEvent{

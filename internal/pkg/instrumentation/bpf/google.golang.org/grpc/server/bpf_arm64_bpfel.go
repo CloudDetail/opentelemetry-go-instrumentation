@@ -17,6 +17,8 @@ type bpfGrpcRequestT struct {
 	EndTime   uint64
 	Sc        bpfSpanContext
 	Psc       bpfSpanContext
+	GoId      uint64
+	Pid       uint32
 	Method    [100]int8
 	_         [4]byte
 }

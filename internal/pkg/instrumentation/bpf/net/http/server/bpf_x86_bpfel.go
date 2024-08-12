@@ -32,6 +32,9 @@ type bpfUprobeDataT struct {
 		RemoteAddr  [256]int8
 		Host        [256]int8
 		Proto       [8]int8
+		GoId        uint64
+		Pid         uint32
+		_           [4]byte
 	}
 	RespPtr uint64
 }

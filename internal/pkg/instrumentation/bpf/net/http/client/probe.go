@@ -236,6 +236,7 @@ type event struct {
 	Host        [128]byte
 	Proto       [8]byte
 	StatusCode  uint64
+	Pid         uint32
 	Method      [16]byte
 	Path        [128]byte
 	Scheme      [8]byte
@@ -323,6 +324,7 @@ func convertEvent(e *event) []*probe.SpanEvent {
 	if serverPort.Valid() {
 		attrs = append(attrs, serverPort)
 	}
+	utils.WriteKdClientEvent(sc.TraceID().String(), int64(e.StartTime), int64(e.EndTime), e.Pid)
 
 	proto := unix.ByteSliceToString(e.Proto[:])
 	if proto != "" {

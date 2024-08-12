@@ -39,6 +39,7 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 
 	"go.opentelemetry.io/auto/internal/pkg/instrumentation"
+	"go.opentelemetry.io/auto/internal/pkg/instrumentation/utils"
 	"go.opentelemetry.io/auto/internal/pkg/opentelemetry"
 	"go.opentelemetry.io/auto/internal/pkg/process"
 )
@@ -149,6 +150,7 @@ func NewInstrumentation(ctx context.Context, opts ...InstrumentationOption) (*In
 	)
 	mngr.FilterUnusedProbes(td)
 
+	utils.CachePidServiceName(uint32(pid), c.serviceName)
 	return &Instrumentation{
 		target:   td,
 		analyzer: pa,

@@ -26,6 +26,7 @@ char __license[] SEC("license") = "Dual MIT/GPL";
 struct grpc_request_t
 {
     BASE_SPAN_PROPERTIES
+    u32 pid;
     char method[MAX_SIZE];
     char target[MAX_SIZE];
 };
@@ -119,6 +120,7 @@ int uprobe_ClientConn_Invoke(struct pt_regs *ctx)
         grpcReq.sc = generate_span_context();
     }
 
+    grpcReq.pid = bpf_get_current_pid_tgid() >> 32;
     // Write event
     bpf_map_update_elem(&grpc_events, &key, &grpcReq, 0);
     start_tracking_span(context_ptr, &grpcReq.sc);
