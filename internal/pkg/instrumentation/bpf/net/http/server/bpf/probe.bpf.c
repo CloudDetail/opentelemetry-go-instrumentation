@@ -197,14 +197,6 @@ static __always_inline void read_go_string(void *base, int offset, char *output,
     }
 }
 
-void read_go_string(void *base, int offset, char *output, int maxLen, const char *errorMsg) {
-    void *ptr = (void *)(base + offset);
-    if (!get_go_string_from_user_ptr(ptr, output, maxLen)) {
-        bpf_printk("Failed to get %s", errorMsg);
-    }
-    
-}
-
 // This instrumentation attaches uprobe to the following function:
 // func (sh serverHandler) ServeHTTP(rw ResponseWriter, req *Request)
 SEC("uprobe/serverHandler_ServeHTTP")

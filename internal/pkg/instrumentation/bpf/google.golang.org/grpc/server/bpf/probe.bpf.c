@@ -113,9 +113,9 @@ int uprobe_server_handleStream(struct pt_regs *ctx)
 
     u64 go_id = 0;
     bpf_probe_read(&go_id, sizeof(go_id), key + 152);
-    grpcReq.go_id = go_id;
-    grpcReq.pid = bpf_get_current_pid_tgid() >> 32;
-    bpf_printk("uprobe/grpc current go id:%d pid: %d", go_id, grpcReq.pid);
+    grpcReq->go_id = go_id;
+    grpcReq->pid = bpf_get_current_pid_tgid() >> 32;
+    bpf_printk("uprobe/grpc current go id:%d pid: %d", go_id, grpcReq->pid);
 
 
     grpcReq->start_time = bpf_ktime_get_ns();
