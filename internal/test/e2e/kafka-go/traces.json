@@ -6,7 +6,7 @@
           {
             "key": "process.runtime.description",
             "value": {
-              "stringValue": "go version 1.22.3 linux/amd64"
+              "stringValue": "go version 1.22.5 linux/amd64"
             }
           },
           {
@@ -18,7 +18,7 @@
           {
             "key": "process.runtime.version",
             "value": {
-              "stringValue": "1.22.3"
+              "stringValue": "1.22.5"
             }
           },
           {
@@ -28,9 +28,15 @@
             }
           },
           {
-            "key": "telemetry.auto.version",
+            "key": "telemetry.distro.name",
             "value": {
-              "stringValue": "v0.13.0-alpha"
+              "stringValue": "opentelemetry-go-instrumentation"
+            }
+          },
+          {
+            "key": "telemetry.distro.version",
+            "value": {
+              "stringValue": "v0.14.0-alpha"
             }
           },
           {
@@ -41,12 +47,13 @@
           }
         ]
       },
-      "schemaUrl": "https://opentelemetry.io/schemas/1.21.0",
+      "schemaUrl": "https://opentelemetry.io/schemas/1.26.0",
       "scopeSpans": [
         {
+          "schemaUrl": "https://opentelemetry.io/schemas/1.26.0",
           "scope": {
             "name": "go.opentelemetry.io/auto/github.com/segmentio/kafka-go",
-            "version": "v0.13.0-alpha"
+            "version": "v0.14.0-alpha"
           },
           "spans": [
             {
@@ -70,7 +77,7 @@
                   }
                 },
                 {
-                  "key": "messaging.operation",
+                  "key": "messaging.operation.type",
                   "value": {
                     "stringValue": "publish"
                   }
@@ -111,7 +118,7 @@
                   }
                 },
                 {
-                  "key": "messaging.operation",
+                  "key": "messaging.operation.type",
                   "value": {
                     "stringValue": "publish"
                   }
@@ -141,7 +148,7 @@
           {
             "key": "process.runtime.description",
             "value": {
-              "stringValue": "go version 1.22.3 linux/amd64"
+              "stringValue": "go version 1.22.5 linux/amd64"
             }
           },
           {
@@ -153,7 +160,7 @@
           {
             "key": "process.runtime.version",
             "value": {
-              "stringValue": "1.22.3"
+              "stringValue": "1.22.5"
             }
           },
           {
@@ -163,9 +170,15 @@
             }
           },
           {
-            "key": "telemetry.auto.version",
+            "key": "telemetry.distro.name",
             "value": {
-              "stringValue": "v0.13.0-alpha"
+              "stringValue": "opentelemetry-go-instrumentation"
+            }
+          },
+          {
+            "key": "telemetry.distro.version",
+            "value": {
+              "stringValue": "v0.14.0-alpha"
             }
           },
           {
@@ -176,12 +189,13 @@
           }
         ]
       },
-      "schemaUrl": "https://opentelemetry.io/schemas/1.21.0",
+      "schemaUrl": "https://opentelemetry.io/schemas/1.26.0",
       "scopeSpans": [
         {
+          "schemaUrl": "https://opentelemetry.io/schemas/1.26.0",
           "scope": {
             "name": "go.opentelemetry.io/auto/github.com/segmentio/kafka-go",
-            "version": "v0.13.0-alpha"
+            "version": "v0.14.0-alpha"
           },
           "spans": [
             {
@@ -193,15 +207,15 @@
                   }
                 },
                 {
-                  "key": "messaging.operation",
+                  "key": "messaging.operation.type",
                   "value": {
                     "stringValue": "receive"
                   }
                 },
                 {
-                  "key": "messaging.kafka.destination.partition",
+                  "key": "messaging.destination.partition.id",
                   "value": {
-                    "intValue": "0"
+                    "stringValue": "0"
                   }
                 },
                 {

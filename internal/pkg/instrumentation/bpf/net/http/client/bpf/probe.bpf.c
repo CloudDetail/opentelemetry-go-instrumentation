@@ -3,6 +3,7 @@
 #include "go_context.h"
 #include "go_types.h"
 #include "uprobe.h"
+#include "span_output.h"
 
 char __license[] SEC("license") = "Dual MIT/GPL";
 
@@ -45,13 +46,6 @@ struct {
 	__uint(max_entries, MAX_CONCURRENT);
 } http_events SEC(".maps");
 
-struct {
-	__uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
-	__uint(key_size, sizeof(u32));
-	__uint(value_size, sizeof(struct map_bucket));
-	__uint(max_entries, 1);
-} golang_mapbucket_storage_map SEC(".maps");
-
 struct
 {
     __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
@@ -67,17 +61,12 @@ struct {
 	__uint(max_entries, MAX_CONCURRENT);
 } http_headers SEC(".maps");
 
-struct {
-	__uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
-} events SEC(".maps");
-
 // Injected in init
 volatile const u64 method_ptr_pos;
 volatile const u64 url_ptr_pos;
 volatile const u64 path_ptr_pos;
 volatile const u64 headers_ptr_pos;
 volatile const u64 ctx_ptr_pos;
-volatile const u64 buckets_ptr_pos;
 volatile const u64 status_code_pos;
 volatile const u64 request_host_pos;
 volatile const u64 request_proto_pos;
@@ -93,6 +82,7 @@ volatile const u64 raw_fragment_pos;
 volatile const u64 username_pos;
 volatile const u64 io_writer_buf_ptr_pos;
 volatile const u64 io_writer_n_pos;
+volatile const u64 url_host_pos;
 
 // This instrumentation attaches uprobe to the following function:
 // func net/http/transport.roundTrip(req *Request) (*Response, error)
@@ -132,7 +122,7 @@ int uprobe_Transport_roundTrip(struct pt_regs *ctx) {
         copy_byte_arrays(httpReq->psc.TraceID, httpReq->sc.TraceID, TRACE_ID_SIZE);
         generate_random_bytes(httpReq->sc.SpanID, SPAN_ID_SIZE);
     } else {
-        httpReq->sc = generate_span_context();
+        get_root_span_context(&httpReq->sc);
     }
 
     if (!get_go_string_from_user_ptr((void *)(req_ptr+method_ptr_pos), httpReq->method, sizeof(httpReq->method))) {
@@ -192,7 +182,10 @@ int uprobe_Transport_roundTrip(struct pt_regs *ctx) {
 
     // get host from Request
     if (!get_go_string_from_user_ptr((void *)(req_ptr+request_host_pos), httpReq->host, sizeof(httpReq->host))) {
-        bpf_printk("uprobe_Transport_roundTrip: Failed to get host from Request");
+        // If host is not present in Request, get it from URL
+        if (!get_go_string_from_user_ptr((void *)(url_ptr+url_host_pos), httpReq->host, sizeof(httpReq->host))) {
+            bpf_printk("uprobe_Transport_roundTrip: Failed to get host from Request and URL");
+        }
     }
 
     // get proto from Request
@@ -209,7 +202,6 @@ int uprobe_Transport_roundTrip(struct pt_regs *ctx) {
 
     // Write event
     bpf_map_update_elem(&http_events, &key, httpReq, 0);
-    start_tracking_span(context_ptr_val, &httpReq->sc);
     return 0;
 }
 
@@ -237,8 +229,7 @@ int uprobe_Transport_roundTrip_Returns(struct pt_regs *ctx) {
     http_req_span->end_time = end_time;
     http_req_span->pid = bpf_get_current_pid_tgid() >> 32;
 
-    bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU, http_req_span, sizeof(*http_req_span));
-    stop_tracking_span(&http_req_span->sc, &http_req_span->psc);
+    output_span_event(ctx, http_req_span, sizeof(*http_req_span), &http_req_span->sc);
 
     bpf_map_delete_elem(&http_events, &key);
     return 0;

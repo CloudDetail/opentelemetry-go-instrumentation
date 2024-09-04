@@ -8,6 +8,41 @@ OpenTelemetry Go Automatic Instrumentation adheres to [Semantic Versioning](http
 
 ## [Unreleased]
 
+## [v0.14.0-alpha] - 2024-07-15
+
+### Added
+
+- Add support to log level through command line flag. ([#842](https://github.com/open-telemetry/opentelemetry-go-instrumentation/pull/842))
+- The `WithLogLevel` function and `LogLevel` type are added to set the log level for `Instrumentation`. ([#842](https://github.com/open-telemetry/opentelemetry-go-instrumentation/pull/842))
+- The `otelglobal` probe now collects the user provided tracer name, version and schemaURL. ([#844](https://github.com/open-telemetry/opentelemetry-go-instrumentation/pull/844))
+- Add `codespell` make target. ([#863](https://github.com/open-telemetry/opentelemetry-go-instrumentation/pull/863))
+- Initial support for `trace-flags`. ([#868](https://github.com/open-telemetry/opentelemetry-go-instrumentation/pull/868))
+- Support `google.golang.org/grpc` `1.66.0-dev`. ([#872](https://github.com/open-telemetry/opentelemetry-go-instrumentation/pull/872))
+- Add telemetry distro name & version resource attributes. ([#897](https://github.com/open-telemetry/opentelemetry-go-instrumentation/pull/897))
+- Support `google.golang.org/grpc` `1.65.0`. ([#904](https://github.com/open-telemetry/opentelemetry-go-instrumentation/pull/904))
+- Support Go `v1.21.12`. ([#905](https://github.com/open-telemetry/opentelemetry-go-instrumentation/pull/905))
+- Support Go `v1.22.5`. ([#905](https://github.com/open-telemetry/opentelemetry-go-instrumentation/pull/905))
+- Support `go.opentelemetry.io/otel@v1.28.0`. ([#905](https://github.com/open-telemetry/opentelemetry-go-instrumentation/pull/905))
+- Support `google.golang.org/grpc` `1.63.3`. ([#916](https://github.com/open-telemetry/opentelemetry-go-instrumentation/pull/916))
+- Support `google.golang.org/grpc` `1.64.1`. ([#916](https://github.com/open-telemetry/opentelemetry-go-instrumentation/pull/916))
+- Support `golang.org/x/net` `v0.27.0`. ([#917](https://github.com/open-telemetry/opentelemetry-go-instrumentation/pull/917))
+
+### Changed
+
+- Upgrade semconv from `v1.24.0` to `v1.26.0` in `github.com/segmentio/kafka-go` instrumentation. ([#909](https://github.com/open-telemetry/opentelemetry-go-instrumentation/pull/909))
+  - The `messaging.operation` attribute key is renamed to `messaging.operation.type`.
+  - The `messaging.kafka.destination.partition` key is renamed to `messaging.destination.partition.id`
+- Upgrade semconv from `v1.21.0` to `v1.26.0` in `database/sql` instrumentation. ([#911](https://github.com/open-telemetry/opentelemetry-go-instrumentation/pull/911))
+  - The `db.statement` attribute key is renamed to `db.query.text`.
+- Upgrade semconv from `v1.24.0` to `v1.26.0` in `google.golang.org/grpc` instrumentation. ([#912](https://github.com/open-telemetry/opentelemetry-go-instrumentation/pull/912))
+  - The `net.peer.name` attribute key in client instrumentation is renamed to `server.address`.
+- Upgrade semconv to `v1.26.0` in `net/http` instrumentation. ([#913](https://github.com/open-telemetry/opentelemetry-go-instrumentation/pull/913))
+- Upgrade `go.opentelemetry.io/auto` semconv to `v1.26.0`. ([#914](https://github.com/open-telemetry/opentelemetry-go-instrumentation/pull/914))
+
+### Fixed
+
+- The HTTP client now uses the `Host` field from the URL if the `Request.Host` is not present. ([#888](https://github.com/open-telemetry/opentelemetry-go-instrumentation/pull/888))
+
 ## [v0.13.0-alpha] - 2024-06-04
 
 ### Added
@@ -343,7 +378,8 @@ OpenTelemetry Go Automatic Instrumentation adheres to [Semantic Versioning](http
 
 This is the first release of OpenTelemetry Go Automatic Instrumentation.
 
-[Unreleased]: https://github.com/open-telemetry/opentelemetry-go-instrumentation/compare/v0.13.0-alpha...HEAD
+[Unreleased]: https://github.com/open-telemetry/opentelemetry-go-instrumentation/compare/v0.14.0-alpha...HEAD
+[v0.14.0-alpha]: https://github.com/open-telemetry/opentelemetry-go-instrumentation/releases/tag/v0.14.0-alpha
 [v0.13.0-alpha]: https://github.com/open-telemetry/opentelemetry-go-instrumentation/releases/tag/v0.13.0-alpha
 [v0.12.0-alpha]: https://github.com/open-telemetry/opentelemetry-go-instrumentation/releases/tag/v0.12.0-alpha
 [v0.11.0-alpha]: https://github.com/open-telemetry/opentelemetry-go-instrumentation/releases/tag/v0.11.0-alpha

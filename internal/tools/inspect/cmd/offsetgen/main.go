@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 // Offsetgen is a utility to generate a static file containing offsets for Go
 // struct fields.
@@ -134,6 +123,7 @@ func manifests() ([]inspect.Manifest, error) {
 				structfield.NewID("std", "net/url", "URL", "RawQuery"),
 				structfield.NewID("std", "net/url", "URL", "Fragment"),
 				structfield.NewID("std", "net/url", "URL", "RawFragment"),
+				structfield.NewID("std", "net/url", "URL", "Host"),
 				structfield.NewID("std", "net/url", "Userinfo", "username"),
 				structfield.NewID("std", "bufio", "Writer", "buf"),
 				structfield.NewID("std", "bufio", "Writer", "n"),
@@ -171,6 +161,9 @@ func manifests() ([]inspect.Manifest, error) {
 			},
 			StructFields: []structfield.ID{
 				structfield.NewID("go.opentelemetry.io/otel", "go.opentelemetry.io/otel/internal/global", "tracer", "delegate"),
+				structfield.NewID("go.opentelemetry.io/otel", "go.opentelemetry.io/otel/internal/global", "tracer", "name"),
+				structfield.NewID("go.opentelemetry.io/otel", "go.opentelemetry.io/otel/internal/global", "tracer", "provider"),
+				structfield.NewID("go.opentelemetry.io/otel", "go.opentelemetry.io/otel/internal/global", "tracerProvider", "tracers"),
 			},
 		},
 		{

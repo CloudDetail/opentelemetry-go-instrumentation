@@ -37,6 +37,8 @@ Users of non-Linux operating systems can use
 [the Docker images](https://github.com/open-telemetry/opentelemetry-go-instrumentation/pkgs/container/opentelemetry-go-instrumentation%2Fautoinstrumentation-go)
 or create a virtual machine to compile and run OpenTelemetry Go Automatic Instrumentation.
 
+See [COMPATIBILITY.md](./COMPATIBILITY.md) for information about what Go packages this project provides instrumentation for.
+
 ## Get started
 
 See [Getting started](docs/getting-started.md) for setup, deployment, and configuration steps.
@@ -54,7 +56,7 @@ See the [contributing documentation](./CONTRIBUTING.md).
 OpenTelemetry Go Automatic Instrumentation is licensed under the terms of the [Apache Software License version 2.0].
 See the [license file](./LICENSE) for more details.
 
-Third-party licesnes and copyright notices can be found in the [LICENSES directory](./LICENSES).
+Third-party licenses and copyright notices can be found in the [LICENSES directory](./LICENSES).
 
 [OpenTelemetry]: https://opentelemetry.io/
 [Go]: https://go.dev/

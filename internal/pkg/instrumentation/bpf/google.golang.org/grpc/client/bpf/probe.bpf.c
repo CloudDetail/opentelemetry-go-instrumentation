@@ -54,11 +54,6 @@ struct
     __uint(max_entries, MAX_CONCURRENT);
 } streamid_to_span_contexts SEC(".maps");
 
-struct
-{
-    __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
-} events SEC(".maps");
-
 // Injected in init
 volatile const u64 clientconn_target_ptr_pos;
 volatile const u64 httpclient_nextid_pos;
@@ -112,12 +107,11 @@ int uprobe_ClientConn_Invoke(struct pt_regs *ctx)
     if (parent_span_ctx != NULL)
     {
         bpf_probe_read(&grpcReq.psc, sizeof(grpcReq.psc), parent_span_ctx);
-        copy_byte_arrays(grpcReq.psc.TraceID, grpcReq.sc.TraceID, TRACE_ID_SIZE);
-        generate_random_bytes(grpcReq.sc.SpanID, SPAN_ID_SIZE);
+        get_span_context_from_parent(parent_span_ctx, &grpcReq.sc);
     }
     else
     {
-        grpcReq.sc = generate_span_context();
+        get_root_span_context(&grpcReq.sc);
     }
 
     grpcReq.pid = bpf_get_current_pid_tgid() >> 32;
@@ -178,6 +172,8 @@ int uprobe_http2Client_NewStream(struct pt_regs *ctx)
     void *httpclient_ptr = get_argument(ctx, 1);
     u32 nextid = 0;
     bpf_probe_read(&nextid, sizeof(nextid), (void *)(httpclient_ptr + (httpclient_nextid_pos)));
+    // Get the span context from go context. The mapping is created in the Invoke probe,
+    // the context here is derived from the Invoke context.
     struct span_context *current_span_context = get_parent_span_context(context_ptr);
     if (current_span_context != NULL) {
         bpf_map_update_elem(&streamid_to_span_contexts, &nextid, current_span_context, 0);

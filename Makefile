@@ -19,7 +19,7 @@ CGO_ENABLED=0
 .DEFAULT_GOAL := precommit
 
 .PHONY: precommit
-precommit: license-header-check dependabot-generate go-mod-tidy golangci-lint-fix
+precommit: license-header-check dependabot-generate go-mod-tidy golangci-lint-fix codespell
 
 # Tools
 $(TOOLS):
@@ -32,7 +32,7 @@ MULTIMOD = $(TOOLS)/multimod
 $(TOOLS)/multimod: PACKAGE=go.opentelemetry.io/build-tools/multimod
 
 GOLICENSES = $(TOOLS)/go-licenses
-$(TOOLS)/go-licenses: PACKAGE=github.com/google/go-licenses
+$(TOOLS)/go-licenses: PACKAGE=github.com/google/go-licenses/v2
 
 DBOTCONF = $(TOOLS)/dbotconf
 $(TOOLS)/dbotconf: PACKAGE=go.opentelemetry.io/build-tools/dbotconf
@@ -181,13 +181,14 @@ fixtures/%:
 	kubectl wait --for=condition=Ready --timeout=60s pod/test-opentelemetry-collector-0
 	kubectl -n default create -f .github/workflows/e2e/k8s/sample-job.yml
 	if kubectl wait --for=condition=Complete --timeout=60s job/sample-job; then \
+		rm -f ./internal/test/e2e/$(LIBRARY)/traces-orig.json; \
 		kubectl cp -c filecp default/test-opentelemetry-collector-0:tmp/trace.json ./internal/test/e2e/$(LIBRARY)/traces-orig.json; \
 		rm -f ./internal/test/e2e/$(LIBRARY)/traces.json; \
 		bats ./internal/test/e2e/$(LIBRARY)/verify.bats; \
 	else \
 		kubectl logs -l app=sample -c auto-instrumentation; \
 	fi
-	 kind delete cluster
+	kind delete cluster
 
 .PHONY: prerelease
 prerelease: | $(MULTIMOD)
@@ -208,3 +209,40 @@ check-clean-work-tree:
 		echo 'Working tree is not clean, did you forget to run "make precommit", "make generate" or "make offsets"?'; \
 		exit 1; \
 	fi
+
+# Virtualized python tools via docker
+
+# The directory where the virtual environment is created.
+VENVDIR := venv
+
+# The directory where the python tools are installed.
+PYTOOLS := $(VENVDIR)/bin
+
+# The pip executable in the virtual environment.
+PIP := $(PYTOOLS)/pip
+
+# The directory in the docker image where the current directory is mounted.
+WORKDIR := /workdir
+
+# The python image to use for the virtual environment.
+PYTHONIMAGE := python:3.11.3-slim-bullseye
+
+# Run the python image with the current directory mounted.
+DOCKERPY := docker run --rm -v "$(CURDIR):$(WORKDIR)" -w $(WORKDIR) $(PYTHONIMAGE)
+
+# Create a virtual environment for Python tools.
+$(PYTOOLS):
+# The `--upgrade` flag is needed to ensure that the virtual environment is
+# created with the latest pip version.
+	@$(DOCKERPY) bash -c "python3 -m venv $(VENVDIR) && $(PIP) install --upgrade pip"
+
+# Install python packages into the virtual environment.
+$(PYTOOLS)/%: $(PYTOOLS)
+	@$(DOCKERPY) $(PIP) install -r requirements.txt
+
+CODESPELL = $(PYTOOLS)/codespell
+$(CODESPELL): PACKAGE=codespell
+
+.PHONY: codespell
+codespell: $(CODESPELL)
+	@$(DOCKERPY) $(CODESPELL)

@@ -35,10 +35,6 @@ struct {
 	__uint(max_entries, MAX_CONCURRENT);
 } sql_events SEC(".maps");
 
-struct {
-	__uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
-} events SEC(".maps");
-
 // Injected in init
 volatile const bool should_include_db_statement;
 
@@ -68,17 +64,15 @@ int uprobe_queryDC(struct pt_regs *ctx) {
     if (span_ctx != NULL) {
         // Set the parent context
         bpf_probe_read(&sql_request.psc, sizeof(sql_request.psc), span_ctx);
-        copy_byte_arrays(sql_request.psc.TraceID, sql_request.sc.TraceID, TRACE_ID_SIZE);
-        generate_random_bytes(sql_request.sc.SpanID, SPAN_ID_SIZE);
+        get_span_context_from_parent(&sql_request.psc, &sql_request.sc);
     } else {
-        sql_request.sc = generate_span_context();
+       get_root_span_context(&sql_request.sc);
     }
 
     // Get key
     void *key = get_consistent_key(ctx, context_ptr_val);
 
     bpf_map_update_elem(&sql_events, &key, &sql_request, 0);
-    start_tracking_span(context_ptr_val, &sql_request.sc);
     return 0;
 }
 
@@ -112,17 +106,15 @@ int uprobe_execDC(struct pt_regs *ctx) {
     if (span_ctx != NULL) {
         // Set the parent context
         bpf_probe_read(&sql_request.psc, sizeof(sql_request.psc), span_ctx);
-        copy_byte_arrays(sql_request.psc.TraceID, sql_request.sc.TraceID, TRACE_ID_SIZE);
-        generate_random_bytes(sql_request.sc.SpanID, SPAN_ID_SIZE);
+        get_span_context_from_parent(&sql_request.psc, &sql_request.sc);
     } else {
-        sql_request.sc = generate_span_context();
+        get_root_span_context(&sql_request.sc);
     }
 
     // Get key
     void *key = get_consistent_key(ctx, context_ptr_val);
 
     bpf_map_update_elem(&sql_events, &key, &sql_request, 0);
-    start_tracking_span(context_ptr_val, &sql_request.sc);
     return 0;
 }
 

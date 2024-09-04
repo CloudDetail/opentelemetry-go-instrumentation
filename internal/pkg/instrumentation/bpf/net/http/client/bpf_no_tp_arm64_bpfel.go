@@ -38,8 +38,10 @@ type bpf_no_tpHttpRequestT struct {
 type bpf_no_tpSliceArrayBuff struct{ Buff [1024]uint8 }
 
 type bpf_no_tpSpanContext struct {
-	TraceID [16]uint8
-	SpanID  [8]uint8
+	TraceID    [16]uint8
+	SpanID     [8]uint8
+	TraceFlags uint8
+	Padding    [7]uint8
 }
 
 // loadBpf_no_tp returns the embedded CollectionSpec for bpf_no_tp.
@@ -94,7 +96,6 @@ type bpf_no_tpProgramSpecs struct {
 type bpf_no_tpMapSpecs struct {
 	AllocMap                   *ebpf.MapSpec `ebpf:"alloc_map"`
 	Events                     *ebpf.MapSpec `ebpf:"events"`
-	GolangMapbucketStorageMap  *ebpf.MapSpec `ebpf:"golang_mapbucket_storage_map"`
 	HttpClientUprobeStorageMap *ebpf.MapSpec `ebpf:"http_client_uprobe_storage_map"`
 	HttpEvents                 *ebpf.MapSpec `ebpf:"http_events"`
 	HttpHeaders                *ebpf.MapSpec `ebpf:"http_headers"`
@@ -124,7 +125,6 @@ func (o *bpf_no_tpObjects) Close() error {
 type bpf_no_tpMaps struct {
 	AllocMap                   *ebpf.Map `ebpf:"alloc_map"`
 	Events                     *ebpf.Map `ebpf:"events"`
-	GolangMapbucketStorageMap  *ebpf.Map `ebpf:"golang_mapbucket_storage_map"`
 	HttpClientUprobeStorageMap *ebpf.Map `ebpf:"http_client_uprobe_storage_map"`
 	HttpEvents                 *ebpf.Map `ebpf:"http_events"`
 	HttpHeaders                *ebpf.Map `ebpf:"http_headers"`
@@ -137,7 +137,6 @@ func (m *bpf_no_tpMaps) Close() error {
 	return _Bpf_no_tpClose(
 		m.AllocMap,
 		m.Events,
-		m.GolangMapbucketStorageMap,
 		m.HttpClientUprobeStorageMap,
 		m.HttpEvents,
 		m.HttpHeaders,

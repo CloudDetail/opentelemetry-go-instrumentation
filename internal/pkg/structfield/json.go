@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package structfield
 
@@ -107,7 +96,7 @@ func find[T any](slice *[]*T, f func(*T) bool) *T {
 // mergeSorted merges the two sorted slices slice0 and slice1 using the cmp
 // function to compare elements.
 //
-// The cmp function needs to return negative values when a<b, possitive values
+// The cmp function needs to return negative values when a<b, positive values
 // when a>b, and 0 when a==b.
 func mergeSorted[T any](slice0, slice1 []T, cmp func(a, b T) int) []T {
 	merged := make([]T, 0, len(slice0)+len(slice1))

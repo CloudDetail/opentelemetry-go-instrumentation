@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package opentelemetry
 
@@ -33,7 +22,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
-	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/auto/internal/pkg/instrumentation/probe"
@@ -112,10 +101,11 @@ func TestTrace(t *testing.T) {
 				Kind:    trace.SpanKindClient,
 				SpanEvents: []*probe.SpanEvent{
 					{
-						SpanName:    "testSpan",
-						StartTime:   startTime.Unix(),
-						EndTime:     endTime.Unix(),
-						SpanContext: &spanContext,
+						SpanName:     "testSpan",
+						StartTime:    startTime.Unix(),
+						EndTime:      endTime.Unix(),
+						SpanContext:  &spanContext,
+						TracerSchema: semconv.SchemaURL,
 					},
 				},
 			},
@@ -127,8 +117,9 @@ func TestTrace(t *testing.T) {
 					EndTime:   convertedEndTime,
 					Resource:  instResource(),
 					InstrumentationLibrary: instrumentation.Library{
-						Name:    "go.opentelemetry.io/auto/foo/bar",
-						Version: "test",
+						Name:      "go.opentelemetry.io/auto/foo/bar",
+						Version:   "test",
+						SchemaURL: semconv.SchemaURL,
 					},
 				},
 			},
@@ -219,6 +210,51 @@ func TestTrace(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "otelglobal",
+			event: &probe.Event{
+				Kind: trace.SpanKindClient,
+				SpanEvents: []*probe.SpanEvent{
+					{
+						SpanName:    "very important span",
+						StartTime:   startTime.Unix(),
+						EndTime:     endTime.Unix(),
+						SpanContext: &spanContext,
+						Attributes: []attribute.KeyValue{
+							attribute.Int64("int.value", 42),
+							attribute.String("string.value", "hello"),
+							attribute.Float64("float.value", 3.14),
+							attribute.Bool("bool.value", true),
+						},
+						Status:        probe.Status{Code: codes.Error, Description: "error description"},
+						TracerName:    "user-tracer",
+						TracerVersion: "v1",
+						TracerSchema:  "user-schema",
+					},
+				},
+			},
+			expected: tracetest.SpanStubs{
+				{
+					Name:      "very important span",
+					SpanKind:  trace.SpanKindClient,
+					StartTime: convertedStartTime,
+					EndTime:   convertedEndTime,
+					Resource:  instResource(),
+					InstrumentationLibrary: instrumentation.Library{
+						Name:      "user-tracer",
+						Version:   "v1",
+						SchemaURL: "user-schema",
+					},
+					Attributes: []attribute.KeyValue{
+						attribute.Int64("int.value", 42),
+						attribute.String("string.value", "hello"),
+						attribute.Float64("float.value", 3.14),
+						attribute.Bool("bool.value", true),
+					},
+					Status: sdktrace.Status{Code: codes.Error, Description: "error description"},
+				},
+			},
+		},
 	}
 
 	for _, tt := range testCases {
@@ -236,4 +272,36 @@ func TestTrace(t *testing.T) {
 			assert.Equal(t, tt.expected, spans)
 		})
 	}
+}
+
+func TestGetTracer(t *testing.T) {
+	logger := stdr.New(log.New(os.Stderr, "", log.LstdFlags))
+
+	exporter := tracetest.NewInMemoryExporter()
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithBatcher(exporter),
+		sdktrace.WithResource(instResource()),
+	)
+	defer func() {
+		err := tp.Shutdown(context.Background())
+		assert.NoError(t, err)
+	}()
+
+	ctrl, err := NewController(logger, tp, "test")
+	assert.NoError(t, err)
+
+	t1 := ctrl.getTracer("foo/bar", "test", "v1", "schema")
+	assert.Equal(t, t1, ctrl.tracersMap[tracerID{name: "test", version: "v1", schema: "schema"}])
+	assert.Nil(t, ctrl.tracersMap[tracerID{name: "foo/bar", version: "v1", schema: "schema"}])
+
+	t2 := ctrl.getTracer("net/http", "", "", "")
+	assert.Equal(t, t2, ctrl.tracersMap[tracerID{name: "net/http", version: ctrl.version, schema: ""}])
+
+	t3 := ctrl.getTracer("foo/bar", "test", "v1", "schema")
+	assert.Same(t, t1, t3)
+
+	t4 := ctrl.getTracer("net/http", "", "", "")
+	assert.Same(t, t2, t4)
+	assert.Equal(t, len(ctrl.tracersMap), 2)
 }
